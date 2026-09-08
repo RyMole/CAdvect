@@ -1,5 +1,6 @@
 #include <iostream>
 #include <filesystem>
+#include "Fields.h"
 
 int main(int argc, char* argv[]) {
 
@@ -29,8 +30,25 @@ int main(int argc, char* argv[]) {
     if (!filepath.empty() && !std::filesystem::exists(filepath)) {
         std::cerr << "WARNING: " << filepath << " does not exist!\n";
     }
-
+    auto extension = filepath.extension();
+    std::cout << extension << "\n";
+    std::cout << extension.c_str() << "\n";
+    std::cout << (extension == ".nc") << "\n";
+    
     // load data
+    std::cout << "trying to initialise a field... \n\n";
+
+    int nx = 10;
+    int ny = 10;
+    double mag = 10.;
+    Field field = single_gyre(nx, ny, mag, Direction::CounterClockwise);
+
+    for (int row = 0; row < (ny); row++) {
+        for (int col = 0; col < (nx); col++) {
+        std::cout << field.v[(row * nx) + col] << ", ";
+        }
+    std::cout << "\n";
+    }
 
     // initialise particles
 
