@@ -8,6 +8,9 @@
 #include "Fields.h"
 #include "Particles.h"
 
+// functions declared after main
+void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& output_file,
+                        netCDF::NcVar& time_var, netCDF::NcVar& xpos_var, netCDF::NcVar& ypos_var, int step, float time);
 
 int main(int argc, char* argv[]) {
 
@@ -64,7 +67,7 @@ int main(int argc, char* argv[]) {
         netCDF::NcDim xDim = ncFile.addDim("x", nx);
         netCDF::NcDim yDim = ncFile.addDim("y", ny);
         netCDF::NcDim tDim = ncFile.addDim("time");
-        netCDF::NcDim partDim = ncFile.addDim("particle");
+        netCDF::NcDim partDim = ncFile.addDim("particle", particles.size());
 
         // create and write coordinates
         netCDF::NcVar xVar = ncFile.addVar("x", netCDF::ncFloat, xDim);
@@ -75,6 +78,14 @@ int main(int argc, char* argv[]) {
         //WRITE NOT YET IMPLEMENTED BECAUSE I DONT HAVE CELL CENTRES
         //xVar.putVar(x_centres);
         //yVar.putVar(y_centres);
+
+        // generate and write particle ids
+        std::vector<int> part_ids(particles.size());
+        for ( int i = 0; i < particles.size(); i++ ) {
+            part_ids[i] = i + 1;
+        }
+        partVar.putVar(part_ids.data());
+
 
         // Write the U and V fields.
         std::vector<netCDF::NcDim> dims;
@@ -91,12 +102,11 @@ int main(int argc, char* argv[]) {
         netCDF::NcVar x_pos = ncFile.addVar("x_pos", netCDF::ncDouble, dims);
         netCDF::NcVar y_pos = ncFile.addVar("y_pos", netCDF::ncDouble, dims);
 
-        return 0;
     } catch(netCDF::exceptions::NcException& e) {
       // copied from docs
       std::cout<<"FAILURE**************************\n";
       std::cout << e.what() << "\n";
-      return 2;
+        return 2;
     }
 
     /*
@@ -108,10 +118,38 @@ int main(int argc, char* argv[]) {
     // 1. write positions
     // 2. update positions
     // 3. increment
+    const int max_time = config["Integration"]["Total"].as<int>();
+    const float dt = config["Integration"]["dT"].as<float>();
 
-    const int T
+    netCDF::NcFile output_file(outpath, netCDF::NcFile::write);
+    netCDF::NcVar time_var = output_file.getVar("time");
+    netCDF::NcVar xpos_var = output_file.getVar("x_pos");
+    netCDF::NcVar ypos_var = output_file.getVar("y_pos");
+
+    std::cout << "Beginning iteration. Max: " << max_time << "\tdt: "<< dt << "\n";
+    for ( int step = 0; step <= max_time; step++ ){
+        const float time = step * dt;
+        write_to_output(particles, output_file, time_var, xpos_var, ypos_var, step, time);
+        if ( step % 10 == 0 ) {
+            std::cout << "iterating step " << step << "\n";
+            output_file.sync();
+        }
+    }
 
 
 }
 
-void write_particle_positions (const std::vector<Particle>& particles ) {}
+void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& output_file,
+                        netCDF::NcVar& time_var, netCDF::NcVar& xpos_var, netCDF::NcVar& ypos_var, int step, float time) {
+    // save time coord
+    time_var.putVar(std::vector<size_t>{static_cast<size_t>(step)}, time);
+    // putVar needs the array indexing to be a vector of type size_t, that's why i have to create the vector and static_cast the ints
+
+    // save xy positions per particle;
+    for (int i = 0; i < particles.size(); i++) {
+       xpos_var.putVar(std::vector<size_t>{static_cast<size_t>(step), static_cast<size_t>(i)}, particles[i].x);
+       ypos_var.putVar(std::vector<size_t>{static_cast<size_t>(step), static_cast<size_t>(i)}, particles[i].y);
+    }
+}
+
+
