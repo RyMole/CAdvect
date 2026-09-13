@@ -1,5 +1,9 @@
 #include <iostream>
 #include <filesystem>
+#include <array>
+#include <vector>
+
+
 #include "Fields.h"
 #include "Particles.h"
 
