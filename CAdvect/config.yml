@@ -3,18 +3,18 @@ Test: "success!"
 Field:
   Nx: 100
   Ny: 100
-  Mag: 10
+  Mag: .5
   Xbounds: [0., 1.]
   Ybounds: [0., 1.]
 
 Particles:
   N: 100
-  Point_a: [0.9, 0.1]
-  Point_b: [0.9, 0.9]
+  Point_a: [0.5, 0.1]
+  Point_b: [0.5, 0.9]
 
 Integration:
   Total: 100
   dT: 0.1
 
 Output:
-  Path: "test.nc"
+  Path: "trajectories.nc"

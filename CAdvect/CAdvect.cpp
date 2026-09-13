@@ -1,3 +1,5 @@
+#include <array>
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -11,9 +13,11 @@
 // functions declared after main
 void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& output_file,
                         netCDF::NcVar& time_var, netCDF::NcVar& xpos_var, netCDF::NcVar& ypos_var, int step, float time);
-std::array<double, 2> bilinear(const Particle& particle);
+std::array<double, 2> bilinear_uv(const Particle& particle, const Field& field,
+                                  const std::vector<double>& x_edges, const std::vector<double>& y_edges);
 void forward_euler (Particle& particle, const std::array<double, 2>& particle_uv, const float dt,
                     const std::vector<double>& x_edges, const std::vector<double>& y_edges);
+size_t find_cell_index(const double value, const std::vector<double>& arr);
 
 int main(int argc, char* argv[]) {
 
@@ -43,21 +47,18 @@ int main(int argc, char* argv[]) {
     if (!found_input) {throw std::runtime_error("WARNING: No config file found!");}
 
 
-    // load field data
+    // load field data. Generates values on cell edges by passing in nx +1, ny +1
     std::cout << "Initialising u, v fields...\n";
     const int nx = config["Field"]["Nx"].as<int>();
     const int ny = config["Field"]["Ny"].as<int>();
-    Field field = single_gyre(nx, ny,
-                              config["Field"]["Mag"].as<int>(),
+    Field field = single_gyre(nx + 1, ny + 1,
+                              config["Field"]["Mag"].as<double>(),
                               Direction::CounterClockwise);
     const std::vector<double> x_edges = generate_gridpoints (config["Field"]["Xbounds"][0].as<double>(),
                                                              config["Field"]["Xbounds"][1].as<double>(), nx, GridType::Edges);
-    const std::vector<double> x_centres = generate_gridpoints (config["Field"]["Xbounds"][0].as<double>(),
-                                                               config["Field"]["Xbounds"][1].as<double>(), nx, GridType::Centres);
     const std::vector<double> y_edges = generate_gridpoints (config["Field"]["Ybounds"][0].as<double>(),
                                                              config["Field"]["Ybounds"][1].as<double>(), ny, GridType::Edges);
-    const std::vector<double> y_centres = generate_gridpoints (config["Field"]["Ybounds"][0].as<double>(),
-                                                              config["Field"]["Ybounds"][1].as<double>(), ny, GridType::Centres);
+
 
 
     // initialise particles
@@ -74,8 +75,8 @@ int main(int argc, char* argv[]) {
         netCDF::NcFile ncFile(outpath, netCDF::NcFile::replace);
 
         // Create netCDF dimensions, time is unlimited dimension
-        netCDF::NcDim xDim = ncFile.addDim("x", nx);
-        netCDF::NcDim yDim = ncFile.addDim("y", ny);
+        netCDF::NcDim xDim = ncFile.addDim("x", nx + 1);
+        netCDF::NcDim yDim = ncFile.addDim("y", ny + 1);
         netCDF::NcDim tDim = ncFile.addDim("time");
         netCDF::NcDim partDim = ncFile.addDim("particle", particles.size());
 
@@ -85,9 +86,9 @@ int main(int argc, char* argv[]) {
         netCDF::NcVar tVar = ncFile.addVar("time", netCDF::ncFloat, tDim);
         netCDF::NcVar partVar = ncFile.addVar("particle", netCDF::ncInt, partDim);
 
-        //WRITE NOT YET IMPLEMENTED BECAUSE I DONT HAVE CELL CENTRES
-        xVar.putVar(x_centres.data());
-        yVar.putVar(y_centres.data());
+        //write coordinates of u, v components
+        xVar.putVar(x_edges.data());
+        yVar.putVar(y_edges.data());
 
         // generate and write particle ids
         std::vector<int> part_ids(particles.size());
@@ -148,11 +149,10 @@ int main(int argc, char* argv[]) {
 
         // step through particles once. First interpolate the u, v components then advect
         for ( auto& particle : particles ) {
-            std::array<double, 2> particle_uv = bilinear(particle) ;
-            //forward_euler(particle, particle_uv, dt, x_edges, y_edges);
+            std::array<double, 2> particle_uv = bilinear_uv(particle, field, x_edges, y_edges) ;
+            forward_euler(particle, particle_uv, dt, x_edges, y_edges);
         }
     }
-
 
 }
 
@@ -174,9 +174,51 @@ void write_to_output (const std::vector<Particle>& particles,
     }
 }
 
-std::array<double, 2> bilinear(const Particle& particle) {
+std::array<double, 2> bilinear_uv(const Particle& particle, const Field& field,
+                                  const std::vector<double>& x_edges, const std::vector<double>& y_edges) {
+    size_t idx_x0 = find_cell_index(particle.x, x_edges);
+    size_t idx_y0 = find_cell_index(particle.y, y_edges);
 
+    // distances to x and y points
+    double dx0 = particle.x - x_edges[idx_x0];
+    double dx1 = x_edges[idx_x0 + 1] - particle.x;
+    double dy0 = particle.y - y_edges[idx_y0];
+    double dy1 = y_edges[idx_y0 + 1] - particle.y;
+
+    // bilinear interpolation normalisation factor
+    double norm = 1. / ((dx0 + dx1) * (dy0 + dy1));
+
+    // points around particle labeled a, b, c, d clockwise from bottom left
+    double ua = field.u[(idx_y0 * x_edges.size()) + idx_x0];
+    double ub = field.u[((idx_y0 + 1) * x_edges.size()) + idx_x0];
+    double uc = field.u[((idx_y0 + 1) * x_edges.size()) + idx_x0 + 1];
+    double ud = field.u[(idx_y0 * x_edges.size()) + idx_x0 + 1];
+
+    double va = field.v[(idx_y0 * x_edges.size()) + idx_x0];
+    double vb = field.v[((idx_y0 + 1) * x_edges.size()) + idx_x0];
+    double vc = field.v[((idx_y0 + 1) * x_edges.size()) + idx_x0 + 1];
+    double vd = field.v[(idx_y0 * x_edges.size()) + idx_x0 + 1];
+
+    // weights
+    double weight_a = dx1 * dy1;
+    double weight_b = dx1 * dy0;
+    double weight_c = dx0 * dy0;
+    double weight_d = dx0 * dy1;
+
+    // interpolated velocities
+    double particle_u = ((weight_a * ua) + (weight_b * ub) + (weight_c * uc) + (weight_d * ud)) * norm;
+    double particle_v = ((weight_a * va) + (weight_b * vb) + (weight_c * vc) + (weight_d * vd)) * norm;
+
+    return std::array<double, 2>{particle_u, particle_v};
 }
+
+
+size_t find_cell_index(const double value, const std::vector<double>& arr) {
+    auto idx = std::lower_bound(arr.begin(), arr.end(), value) - arr.begin() - 1;
+    return static_cast<size_t>(std::max(static_cast<int>(idx), 0));
+}
+
+
 
 
 void forward_euler (Particle& particle, const std::array<double, 2>& particle_uv, const float dt, const std::vector<double>& x_edges, const std::vector<double>& y_edges) {

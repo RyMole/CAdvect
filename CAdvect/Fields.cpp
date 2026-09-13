@@ -1,7 +1,6 @@
 
 #include "Fields.h"
 #include <vector>
-#include <iostream>
 #include <cmath>
 #include <numbers>
 
@@ -21,7 +20,7 @@ std::vector<double> single_gyre_component(int nx, int ny, double mag) {
     std::vector<double> vec = half_wave(nx);
     for (int row = 0; row < (ny); row++) {
         for (int col = 0; col < (nx); col++) {
-            field[(row * nx) + col] = vec[col];
+            field[(row * nx) + col] = mag * vec[col];
         }
     }
     return field;
@@ -37,7 +36,7 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
     // return Field structure of single gyre (with u and v components)
     std::vector<double> u_field = single_gyre_component(ny, nx, mag);
     std::vector<double> v_field = single_gyre_component(nx, ny, mag);
-    std::vector<double> u_field_rotated(nx * ny, 5);
+    std::vector<double> u_field_rotated(nx * ny);
 
     // rotate u field 90 clockwise and correct EW direction
     // ny = 5, nx = 10
