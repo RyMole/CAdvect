@@ -39,7 +39,7 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
     std::vector<double> v_field = single_gyre_component(nx, ny, mag);
     std::vector<double> u_field_rotated(nx * ny, 5);
 
-    // rotate u field 90 clockwise
+    // rotate u field 90 clockwise and correct EW direction
     // ny = 5, nx = 10
     for (int row = 0; row < nx; row++) {
         for (int col = 0; col < ny; col++) {
@@ -47,7 +47,7 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
             int new_col = nx - row - 1;
            /*std::cout << "original (" << row << ", " << col << ") goes to (" << new_row << ", " << new_col;
             std::cout << ") old: " << (row * ny) + col << " new: " << (new_row * nx) + new_col << ")\n";*/
-            u_field_rotated[(new_row * nx) + new_col] = u_field[(row * ny) + col];
+            u_field_rotated[(new_row * nx) + new_col] = -u_field[(row * ny) + col];
         }
     }
 
@@ -64,3 +64,25 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
     return {u_field_rotated, v_field};
 }
 
+
+std::vector<double> generate_gridpoints (const double lim0, const double lim1, const int n, const GridType type) {
+    std::vector<double> points;
+    const double dx = (lim1 - lim0) / n;
+
+    switch (type) {
+        case GridType::Centres:
+            for (int i = 0; i < n; i++ ) {
+                    points.push_back((lim0 + dx / 2) + i * dx);
+                }
+            break;
+
+        case GridType::Edges:
+            for (int i = 0; i < (n + 1); i++ ) {
+                points.push_back(lim0 + i * dx);
+            }
+            break;
+    }
+
+
+    return points;
+}

@@ -43,11 +43,19 @@ int main(int argc, char* argv[]) {
 
     // load field data
     std::cout << "Initialising u, v fields...\n";
-    int nx = config["Field"]["Nx"].as<int>();
-    int ny = config["Field"]["Ny"].as<int>();
+    const int nx = config["Field"]["Nx"].as<int>();
+    const int ny = config["Field"]["Ny"].as<int>();
     Field field = single_gyre(nx, ny,
                               config["Field"]["Mag"].as<int>(),
                               Direction::CounterClockwise);
+    const std::vector<double> x_edges = generate_gridpoints (config["Field"]["Xbounds"][0].as<double>(),
+                                                             config["Field"]["Xbounds"][1].as<double>(), nx, GridType::Edges);
+    const std::vector<double> x_centres = generate_gridpoints (config["Field"]["Xbounds"][0].as<double>(),
+                                                               config["Field"]["Xbounds"][1].as<double>(), nx, GridType::Centres);
+    const std::vector<double> y_edges = generate_gridpoints (config["Field"]["Ybounds"][0].as<double>(),
+                                                             config["Field"]["Ybounds"][1].as<double>(), ny, GridType::Edges);
+    const std::vector<double> y_centres = generate_gridpoints (config["Field"]["Ybounds"][0].as<double>(),
+                                                              config["Field"]["Ybounds"][1].as<double>(), ny, GridType::Centres);
 
 
     // initialise particles
@@ -76,8 +84,8 @@ int main(int argc, char* argv[]) {
         netCDF::NcVar partVar = ncFile.addVar("particle", netCDF::ncInt, partDim);
 
         //WRITE NOT YET IMPLEMENTED BECAUSE I DONT HAVE CELL CENTRES
-        //xVar.putVar(x_centres);
-        //yVar.putVar(y_centres);
+        xVar.putVar(x_centres.data());
+        yVar.putVar(y_centres.data());
 
         // generate and write particle ids
         std::vector<int> part_ids(particles.size());
@@ -118,6 +126,7 @@ int main(int argc, char* argv[]) {
     // 1. write positions
     // 2. update positions
     // 3. increment
+
     const int max_time = config["Integration"]["Total"].as<int>();
     const float dt = config["Integration"]["dT"].as<float>();
 
@@ -139,8 +148,13 @@ int main(int argc, char* argv[]) {
 
 }
 
-void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& output_file,
-                        netCDF::NcVar& time_var, netCDF::NcVar& xpos_var, netCDF::NcVar& ypos_var, int step, float time) {
+void write_to_output (const std::vector<Particle>& particles,
+                      netCDF::NcFile& output_file,
+                      netCDF::NcVar& time_var,
+                      netCDF::NcVar& xpos_var,
+                      netCDF::NcVar& ypos_var,
+                      int step, float time) {
+
     // save time coord
     time_var.putVar(std::vector<size_t>{static_cast<size_t>(step)}, time);
     // putVar needs the array indexing to be a vector of type size_t, that's why i have to create the vector and static_cast the ints
@@ -151,5 +165,6 @@ void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& ou
        ypos_var.putVar(std::vector<size_t>{static_cast<size_t>(step), static_cast<size_t>(i)}, particles[i].y);
     }
 }
+
 
 

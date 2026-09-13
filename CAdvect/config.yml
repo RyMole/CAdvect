@@ -4,8 +4,8 @@ Field:
   Nx: 100
   Ny: 100
   Mag: 10
-  Xbounds: [0, 1]
-  Ybounds: [0, 1]
+  Xbounds: [0., 1.]
+  Ybounds: [0., 1.]
 
 Particles:
   N: 100
