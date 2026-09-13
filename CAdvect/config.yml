@@ -1,0 +1,17 @@
+Test: "success!"
+
+Field:
+  Nx: 100
+  Ny: 100
+  Mag: 10
+  Xbounds: [0, 1]
+  Ybounds: [0, 1]
+
+Particles:
+  N: 100
+  Point_a: [0.9, 0.1]
+  Point_b: [0.9, 0.9]
+
+Integration:
+
+Output:
