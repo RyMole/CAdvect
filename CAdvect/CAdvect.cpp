@@ -11,6 +11,9 @@
 // functions declared after main
 void write_to_output (const std::vector<Particle>& particles, netCDF::NcFile& output_file,
                         netCDF::NcVar& time_var, netCDF::NcVar& xpos_var, netCDF::NcVar& ypos_var, int step, float time);
+std::array<double, 2> bilinear(const Particle& particle);
+void forward_euler (Particle& particle, const std::array<double, 2>& particle_uv, const float dt,
+                    const std::vector<double>& x_edges, const std::vector<double>& y_edges);
 
 int main(int argc, char* argv[]) {
 
@@ -33,7 +36,6 @@ int main(int argc, char* argv[]) {
 
                 found_input = true;
                 config = YAML::LoadFile(filepath);
-                std::cout << "test? " << config["Test"] << "\n";
             }
 
         }
@@ -143,6 +145,12 @@ int main(int argc, char* argv[]) {
             std::cout << "iterating step " << step << "\n";
             output_file.sync();
         }
+
+        // step through particles once. First interpolate the u, v components then advect
+        for ( auto& particle : particles ) {
+            std::array<double, 2> particle_uv = bilinear(particle) ;
+            //forward_euler(particle, particle_uv, dt, x_edges, y_edges);
+        }
     }
 
 
@@ -166,5 +174,31 @@ void write_to_output (const std::vector<Particle>& particles,
     }
 }
 
+std::array<double, 2> bilinear(const Particle& particle) {
+
+}
 
 
+void forward_euler (Particle& particle, const std::array<double, 2>& particle_uv, const float dt, const std::vector<double>& x_edges, const std::vector<double>& y_edges) {
+    // simple forward_euler advection scheme with boundary reflection
+    // assumes single reflection is enough
+    double x2 = particle.x + dt * particle_uv[0];
+    double y2 = particle.y + dt * particle_uv[1];
+
+    // reflect at x boundaries
+    if ( x2 < x_edges.front() ) {
+        x2 = x_edges.front() + (x_edges.front() - x2);
+    } else if ( x2 > x_edges.back() ) {
+        x2 = x_edges.back() + (x_edges.back() - x2);
+    }
+
+    // reflect at y boundaries
+    if ( y2 < y_edges.front() ) {
+        y2 = y_edges.front() + (y_edges.front() - y2);
+    } else if ( y2 > y_edges.back() ) {
+        y2 = y_edges.back() + (y_edges.back() - y2);
+    }
+
+    particle.x = x2;
+    particle.y = y2;
+}
