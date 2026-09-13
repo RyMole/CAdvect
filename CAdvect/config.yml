@@ -13,5 +13,8 @@ Particles:
   Point_b: [0.9, 0.9]
 
 Integration:
+  Total: 100
+  dT: 0.1
 
 Output:
+  Path: "test.nc"
