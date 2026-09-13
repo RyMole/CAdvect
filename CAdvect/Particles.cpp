@@ -6,9 +6,12 @@
 
 // initialise a vector of particles given two coordinates and number of particles N
 // coords must be arrays of (x, y)
-std::vector<Particle> from_line(const std::array<double, 2>& start_pos, const std::array<double, 2>& end_pos, int N){
+std::vector<Particle> from_line(const std::vector<double>& start_pos, const std::vector<double>& end_pos, int N){
     if ( start_pos == end_pos ) {
-    throw std::invalid_argument("Start and end points must be different!");
+        throw std::runtime_error("Start and end points must be different!");
+    }
+    if ((start_pos.size() !=2) || (end_pos.size() != 2)) {
+        throw std::runtime_error("Start and end points must be length 2!");
     }
 
     const double delta_x = end_pos[0] - start_pos[0];
