@@ -5,8 +5,15 @@
 #include <numbers>
 
 
+// function to return (nx, ny) vector uniform field with strength mag
+std::vector<double> uniform_field(int nx, int ny, double mag) {
+    std::vector<double> field(nx * ny, mag);
+    return field;
+}
+
+
+// function to return half a cos wave stored as vector of length n
 std::vector<double> half_wave(int n) {
-    // return half a cos wave stored as vector of length n
     std::vector<double> vec(n);
     for (int x = 0; x < n; x++) {
         vec[x] = std::cos(std::numbers::pi * x / (n - 1));
@@ -14,8 +21,9 @@ std::vector<double> half_wave(int n) {
     return vec;
 }
 
+
+// function to return (nx, ny) vector of single velocity component of a single gyre
 std::vector<double> single_gyre_component(int nx, int ny, double mag) {
-    // return (nx, ny) vector of single velocity component of a single gyre
     std::vector<double> field(nx * ny);
     std::vector<double> vec = half_wave(nx);
     for (int row = 0; row < (ny); row++) {
@@ -26,14 +34,10 @@ std::vector<double> single_gyre_component(int nx, int ny, double mag) {
     return field;
 }
 
-std::vector<double> uniform_field(int nx, int ny, double mag) {
-    // return (nx, ny) vector uniform field with strength mag
-    std::vector<double> field(nx * ny, mag);
-    return field;
-}
 
+// function to return Field structure of single gyre (with u and v components). Sense of rotation
+// controlled with dir
 Field single_gyre(int nx, int ny, double mag, Direction dir) {
-    // return Field structure of single gyre (with u and v components)
     std::vector<double> u_field = single_gyre_component(ny, nx, mag);
     std::vector<double> v_field = single_gyre_component(nx, ny, mag);
     std::vector<double> u_field_rotated(nx * ny);
@@ -44,8 +48,6 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
         for (int col = 0; col < ny; col++) {
             int new_row = col;
             int new_col = nx - row - 1;
-           /*std::cout << "original (" << row << ", " << col << ") goes to (" << new_row << ", " << new_col;
-            std::cout << ") old: " << (row * ny) + col << " new: " << (new_row * nx) + new_col << ")\n";*/
             u_field_rotated[(new_row * nx) + new_col] = -u_field[(row * ny) + col];
         }
     }
@@ -64,8 +66,12 @@ Field single_gyre(int nx, int ny, double mag, Direction dir) {
 }
 
 
+// function to return a vector containing calculated grid point locations between lims lim0, lim1. Returns vector length
+// n for GridType Centres, n + 1 for GridType Edges.
 std::vector<double> generate_gridpoints (const double lim0, const double lim1, const int n, const GridType type) {
+    // initialise output array
     std::vector<double> points;
+    // cell width
     const double dx = (lim1 - lim0) / n;
 
     switch (type) {
@@ -81,7 +87,6 @@ std::vector<double> generate_gridpoints (const double lim0, const double lim1, c
             }
             break;
     }
-
 
     return points;
 }
