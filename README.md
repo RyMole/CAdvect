@@ -1,13 +1,19 @@
-# kokkos
-Getting up and running with Kokkos.
+# CAdvect
+Simple Lagranian particle advection solver written in c++. This is intended as a demonstration project, to be later developed implementing Kokkos. This project has introduced me to numberical methods in c++ and implementation using CMake.
 
+## Details
+CAdvect is configured via a yaml configuration file. The example configuration file given includes all the parameters that the file must contain. CAdvect initialises (static) u and v velocity fields representing a single gyre, the strength of the gyre is controlled by `Mag` variable. Particles are initialised with a uniform distribution along a line, defined by two points given in the config file. Data is written out to netcdf file.
 
-# Getting Started
-- Kokkos requires a c compiler. I have `gcc 21.0.0` (min 10.4.0).
-- `CMake` Min is far below current version (4.4.3)
+CAdvect uses bilinear interpolation to determine the Eulerian velocity at the location of each particle. They are then advected by using a simple forward [Euler advection scheme](https://en.wikipedia.org/wiki/Euler_method). This is about as basic an advection kernel as you can get and will lead to errors and may not lead to stable solutions but is useful as a proof of concept. CAdvect could be further developed with alternative advection schemes (eg Runge-Kutta 4th Order) which could be dropped into the time stepping loop in place of the forward Euler.
 
-## Hello World
-Kokkos is an extension library for C++. You write your code, including the Kokkos parts, in C++ and use CMake how to compile the final program. To be sure that the installation of all requirements is working correctly, one can follow the [Hello World](https://kokkos.org/kokkos-core-wiki/get-started/quick-start.html) program from the kokkos docs.
+## /HelloWorld
+Hello World implementation following the [Kokkos docs](https://kokkos.org/kokkos-core-wiki/get-started/quick-start.html). Useful to check that the Kokkos software requirements are up and running correctly. Not part of the advection solver.
 
-## Configuring Kokkos
-The recommended way to use kokkos is as an external libarary. Configure an install locally and then when you want to use it, declare it in your CMake file and point to the right location. For my current use case, I am installing directly from homebrew and will update if there are any difficulties or peculiarities to the installation.
+# Compiling
+You will need to ensure you have a c++ (version 20) compiler and the `netcdf-cxx` and `yaml-cpp` external libraries. In this case they were installed naively using homebrew, no guarantees if installed via other methods.
+
+Prepare the CMake build: `cmake -B build --fresh`
+Build the executable: `cmake --build build
+
+# Running
+From the base directory: `./build/CAdvect -i config.yml`.
