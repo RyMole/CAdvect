@@ -8,7 +8,9 @@ CAdvect uses bilinear interpolation to determine the Eulerian velocity at the lo
 
 ### Structure
 CAdvect.cpp  | Config parsing and main timestepping loop
+
 Fields.cpp   | Generation of velocity fields and associated grid points
+
 Paricles.cpp | Generaiton of particle initial positions
 
 # Compiling
