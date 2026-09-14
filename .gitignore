@@ -70,3 +70,6 @@ Testing/
 
 # kokkos tutorials
 kokkos-tutorials/
+
+# generated netcdf files
+*.nc
