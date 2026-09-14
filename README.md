@@ -13,7 +13,8 @@ Hello World implementation following the [Kokkos docs](https://kokkos.org/kokkos
 You will need to ensure you have a c++ (version 20) compiler and the `netcdf-cxx` and `yaml-cpp` external libraries. In this case they were installed naively using homebrew, no guarantees if installed via other methods.
 
 Prepare the CMake build: `cmake -B build --fresh`
+
 Build the executable: `cmake --build build
 
 # Running
-From the base directory: `./build/CAdvect -i config.yml`.
+From the base directory: `./build/CAdvect -i config.yml`
