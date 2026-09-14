@@ -24,7 +24,7 @@ find_library(NETCDF_CXX_LIBRARY
 
 # define tartget executable and its source files
 add_executable(CAdvect)
-target_sources(CAdvect PRIVATE CAdvect.cpp Fields.cpp Particles.cpp)
+target_sources(CAdvect PRIVATE CAdvect/CAdvect.cpp CAdvect/Fields.cpp CAdvect/Particles.cpp)
 
 # link up external libraries
 target_include_directories(CAdvect PRIVATE ${NETCDF_CXX_INCLUDE_DIR})
